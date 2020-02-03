@@ -13,17 +13,16 @@ RUN rm go1.13.7.linux-amd64.tar.gz
 ENV GOPATH /go
 ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
 RUN mkdir -p "$GOPATH/src" "$GOPATH/bin" && chmod -R 777 "$GOPATH"
-RUN go version
-# COPY squid.conf /etc/squid/squid.conf
+COPY squid.conf /etc/squid/squid.conf
 
-# EXPOSE 3128/tcp
+EXPOSE 3128
 
-# RUN mkdir /app
+RUN mkdir /app
 
-# ADD main.go /app
+ADD main.go /app
 
-# WORKDIR /app
+WORKDIR /app
 
-# RUN go build -o main .
+RUN go build -o main .
 
-# CMD ["/app/main"]
+CMD ["/app/main"]
