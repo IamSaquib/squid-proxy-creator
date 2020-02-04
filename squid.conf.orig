@@ -16,7 +16,7 @@ cache_log /dev/null
 # To disable caching
 cache deny all
 cache_mem 8 MB
-# cache_dir null /tmp
+cache_dir null /tmp
 
 # To make it anonymous
 forwarded_for off
@@ -49,3 +49,4 @@ request_header_access Proxy-Connection allow all
 request_header_access User-Agent allow all
 request_header_access Cookie allow all
 request_header_access All deny all
+
