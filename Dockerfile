@@ -1,5 +1,5 @@
 FROM ubuntu:18.04
-LABEL maintainer="Saquib Ul Hassan <saquibulhassan6@gmail.com>"
+LABEL maintainer="saquibulhassan6@gmail.com"
 
 RUN apt-get update -y
 RUN apt-get install -y squid
@@ -9,18 +9,15 @@ ENV SQUID_VERSION=3.5.27 \
     SQUID_CACHE_DIR=/var/spool/squid \
     SQUID_LOG_DIR=/var/log/squid \
     SQUID_USER=proxy
-
-# COPY squid.conf /etc/squid/squid.conf
+COPY squid.conf /etc/squid/squid.conf
 COPY entrypoint.sh /sbin/entrypoint.sh
 RUN chmod 755 /sbin/entrypoint.sh
+RUN service squid start
 EXPOSE 3128/tcp
 ENTRYPOINT ["/sbin/entrypoint.sh"]
 
-RUN service squid status
-
 RUN wget https://dl.google.com/go/go1.13.7.linux-amd64.tar.gz
 RUN tar -C /usr/local -xzf go1.13.7.linux-amd64.tar.gz
-RUN ls
 RUN rm go1.13.7.linux-amd64.tar.gz
 
 ENV GOPATH /go
