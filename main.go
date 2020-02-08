@@ -17,9 +17,9 @@ import (
 
 func main() {
 
-	if err := api.ShowDB(); err != nil {
-		log.Fatal(err)
-	}
+	// if err := api.ShowDB(); err != nil {
+	// 	log.Fatal(err)
+	// }
 	// var conf &api.Config
 	// conf.userID = ""
 	// conf := api.Config{
@@ -42,6 +42,9 @@ func main() {
 	})
 
 	r.HandleFunc("/create-proxy", api.CreateProxy)
+	r.HandleFunc("/show-proxy", api.ShowProxy)
+	r.HandleFunc("/show-proxy-id", api.ShowProxyByID)
+	r.HandleFunc("/update-proxy", api.UpdateProxy)
 	log.Println("Running server on :1406")
 	srv := &http.Server{
 		Addr: "0.0.0.0:1406",

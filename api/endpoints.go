@@ -4,6 +4,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -42,17 +43,38 @@ func CreateProxy(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// func ReplaceConf()
+// ShowProxy to show all proxies available for user
+func ShowProxy(w http.ResponseWriter, r *http.Request) {
+	var conf []Config
+	conf, err := ShowDB()
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Println(conf)
+	w.Header().Set("Content-Type", "Application/json")
+	json.NewEncoder(w).Encode(conf)
+}
 
-// Method to add users IP Address
-//func AddUser(w http.ResponseWriter, r *http.Request) {
-//	w.Header().Set("Content-Type", "application/json")
-//	var ip IP
-//	_ = json.NewDecoder(r.Body).Decode(&ip)
-//	address := ip.Address
-//	command := createCommand(address)
-//	if err := AppendToFile(command); err != nil {
-//		log.Fatalln(err)
-//	}
-//	json.NewEncoder(w).Encode(&ip)
-//}
+// ShowProxyByID to show details about proxy by ID
+func ShowProxyByID(w http.ResponseWriter, r *http.Request) {
+	var conf Config
+	_ = json.NewDecoder(r.Body).Decode(&conf)
+	fmt.Print(conf)
+	config, err := ShowByID(conf.ID)
+	if err != nil {
+		log.Fatal(err)
+	}
+	w.Header().Set("Content-Type", "Application/json")
+	json.NewEncoder(w).Encode(config)
+}
+
+// UpdateProxy to update proxy based on config id
+func UpdateProxy(w http.ResponseWriter, r *http.Request) {
+	var config Config
+	_ = json.NewDecoder(r.Body).Decode(&config)
+	if err := UpdateDB(config); err != nil {
+		log.Fatal(err)
+	}
+	w.Header().Set("Content-Type", "Application/json")
+	json.NewEncoder(w).Encode("Updated")
+}
