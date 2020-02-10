@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 )
 
 // AppendToFile which appends content to a file
@@ -32,7 +33,7 @@ func CreateProxy(w http.ResponseWriter, r *http.Request) {
 	if err := AddToDB(config); err != nil {
 		log.Fatal(err)
 	}
-	f, err := os.Create("squid/squid1.conf")
+	f, err := os.Create("squid/" + strings.Replace(config.ProxyName, " ", "", -1) + ".conf")
 	if err != nil {
 		log.Fatal(err)
 	}
