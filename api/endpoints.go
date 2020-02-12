@@ -11,16 +11,15 @@ import (
 	"strings"
 )
 
-// AppendToFile which appends content to a file
-func AppendToFile(content string) error {
-	f, err := os.OpenFile("squid.conf",
+// AddToConf function to append into /etc/squid/squid.conf
+func AddToConf(path string) error {
+	fs, err := os.OpenFile("squid.conf",
 		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
-	log.Println("Command :: " + content)
-	defer f.Close()
-	if _, err := f.WriteString(content); err != nil {
+	defer fs.Close()
+	if _, err := fs.WriteString("\ninclude /" + path); err != nil {
 		return err
 	}
 	return nil
@@ -33,7 +32,8 @@ func CreateProxy(w http.ResponseWriter, r *http.Request) {
 	if err := AddToDB(config); err != nil {
 		log.Fatal(err)
 	}
-	f, err := os.Create("squid/" + strings.Replace(config.ProxyName, " ", "", -1) + ".conf")
+	path := "squid/" + strings.Replace(config.ProxyName, " ", "", -1) + ".conf"
+	f, err := os.Create(path)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -42,6 +42,12 @@ func CreateProxy(w http.ResponseWriter, r *http.Request) {
 	if _, err = f.Write(content); err != nil {
 		log.Fatal(err)
 	}
+	err = AddToConf(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	w.Header().Set("Content-Type", "Application/json")
+	json.NewEncoder(w).Encode("Created ")
 }
 
 // ShowProxy to show all proxies available for user
@@ -76,6 +82,35 @@ func UpdateProxy(w http.ResponseWriter, r *http.Request) {
 	if err := UpdateDB(config); err != nil {
 		log.Fatal(err)
 	}
+	err := os.Remove("squid/" + strings.Replace(config.ProxyName, " ", "", -1) + ".conf")
+	if err != nil {
+		log.Fatal(err)
+	}
+	path := "squid/" + strings.Replace(config.ProxyName, " ", "", -1) + ".conf"
+	f, err := os.Create(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+	content := []byte(config.Config)
+	if _, err = f.Write(content); err != nil {
+		log.Fatal(err)
+	}
 	w.Header().Set("Content-Type", "Application/json")
 	json.NewEncoder(w).Encode("Updated")
+}
+
+// DeleteProxy to delete proxy based on config id
+func DeleteProxy(w http.ResponseWriter, r *http.Request) {
+	var config Config
+	_ = json.NewDecoder(r.Body).Decode(&config)
+	if err := DeleteDB(config); err != nil {
+		log.Fatal(err)
+	}
+	err := os.Remove("squid/" + strings.Replace(config.ProxyName, " ", "", -1) + ".conf")
+	if err != nil {
+		log.Fatal(err)
+	}
+	w.Header().Set("Content-Type", "Application/json")
+	json.NewEncoder(w).Encode("Deleted")
 }

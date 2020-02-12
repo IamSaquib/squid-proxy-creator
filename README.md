@@ -4,4 +4,18 @@ A Squid Proxy Dockerfile which runs a server in Go that will provide API endpoin
 
 ### How to Run 
 - docker build -t squid-proxy-balancer .
--  docker run -d -p 8080:8080 -p 3128:3128 --name balancer squid-proxy-balancer
+- docker run -d --restart=always -p 4128:3128 --volume /srv/docker/squid/cache:/var/spool/squid --name balancer -p 1406:1406 squid-proxy-balancer
+
+### To Create Sqlite DB
+
+```sql
+    create table "proxy_config" (
+        "id" char(36) DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6)))) NOT NULL PRIMARY KEY, 
+        "user_id" CHAR(36) NOT NULL,
+        "config" TEXT,
+        "proxy_name" VARCHAR(255),
+        "proxy_port" INT,
+        "ts" DATETIME default current_timestamp,
+        "ts_mod" DATETIME default current_timestamp
+    );
+```

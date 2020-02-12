@@ -17,20 +17,6 @@ import (
 
 func main() {
 
-	// if err := api.ShowDB(); err != nil {
-	// 	log.Fatal(err)
-	// }
-	// var conf &api.Config
-	// conf.userID = ""
-	// conf := api.Config{
-	// 	UserID:    "bab775c9-96a5-459b-a823-29a3faca7d39",
-	// 	Config:    "acl src 192.12.343.42",
-	// 	ProxyName: "My first proxy",
-	// }
-	// if err := api.CreateProxy(conf); err != nil {
-	// 	log.Fatal("Ran into ", err)
-	// }
-
 	var wait time.Duration
 	flag.DurationVar(&wait, "graceful-timeout", time.Second*15, "the duration for which the server gracefully wait for existing connections to finish - e.g. 15s or 1m")
 	flag.Parse()
@@ -41,10 +27,11 @@ func main() {
 		fmt.Fprintf(w, "Hello, %q", html.EscapeString(r.URL.Path))
 	})
 
-	r.HandleFunc("/create-proxy", api.CreateProxy)
-	r.HandleFunc("/show-proxy", api.ShowProxy)
-	r.HandleFunc("/show-proxy-id", api.ShowProxyByID)
-	r.HandleFunc("/update-proxy", api.UpdateProxy)
+	r.HandleFunc("/create-proxy", api.CreateProxy).Methods("POST")
+	r.HandleFunc("/show-proxy", api.ShowProxy).Methods("GET")
+	r.HandleFunc("/show-proxy-id", api.ShowProxyByID).Methods("POST")
+	r.HandleFunc("/update-proxy", api.UpdateProxy).Methods("PUT")
+	r.HandleFunc("/delete-proxy", api.DeleteProxy).Methods("DELETE")
 	log.Println("Running server on :1406")
 	srv := &http.Server{
 		Addr: "0.0.0.0:1406",

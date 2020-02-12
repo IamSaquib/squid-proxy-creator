@@ -4,7 +4,7 @@ LABEL maintainer="saquibulhassan6@gmail.com"
 RUN apt-get update -y
 RUN apt-get install -y squid
 RUN apt-get install -y apache2-utils wget
-
+RUN apt-get install -y sqlite3 build-essential
 ENV SQUID_VERSION=3.5.27 \
     SQUID_CACHE_DIR=/var/spool/squid \
     SQUID_LOG_DIR=/var/log/squid \
@@ -31,6 +31,7 @@ ADD . /app
 
 WORKDIR /app
 RUN go get -u github.com/gorilla/mux
-RUN go build -o main .
+RUN go get -u github.com/mattn/go-sqlite3
 
+RUN go build -o main .
 CMD ["/app/main"]
