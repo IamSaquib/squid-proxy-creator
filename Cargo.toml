@@ -9,4 +9,6 @@ edition = "2018"
 [dependencies]
 hyper = "0.13"
 tokio = { version = "0.2", features = ["full"] }
-rusqlite = "0.21.0"
+chrono = { version = "0.4.10", features = ["serde"] }
+diesel = { version = "1.4.3", features = ["sqlite", "chrono"] }
+dotenv = "0.10"
