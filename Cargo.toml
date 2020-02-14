@@ -1,0 +1,12 @@
+[package]
+name = "squid-proxy-peer"
+version = "0.1.0"
+authors = ["iamsaquib <saquib@distill.io>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+hyper = "0.13"
+tokio = { version = "0.2", features = ["full"] }
+rusqlite = "0.21.0"
