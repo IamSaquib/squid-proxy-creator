@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"html"
@@ -15,6 +16,37 @@ import (
 	"github.com/squid-proxy-creator/api"
 )
 
+func basicAuth(realm string, credentials map[string]string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			username, password, ok := r.BasicAuth()
+			if !ok {
+				unauthorized(w, realm)
+				return
+			}
+
+			validPassword, userFound := credentials[username]
+			if !userFound {
+				unauthorized(w, realm)
+				return
+			}
+
+			if password == validPassword {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			unauthorized(w, realm)
+		})
+	}
+}
+
+func unauthorized(w http.ResponseWriter, realm string) {
+	w.Header().Add("WWW-Authenticate", fmt.Sprintf(`Auth="%s"`, realm))
+	w.WriteHeader(http.StatusUnauthorized)
+	json.NewEncoder(w).Encode("Unauthorized")
+}
+
 func main() {
 
 	var wait time.Duration
@@ -23,6 +55,9 @@ func main() {
 
 	r := mux.NewRouter()
 	// Add your routes as needed
+	r.Use(basicAuth("Basic", map[string]string{
+		"saquib": "6212",
+	}))
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Hello, %q", html.EscapeString(r.URL.Path))
 	})
@@ -32,9 +67,9 @@ func main() {
 	r.HandleFunc("/show-proxy-id", api.ShowProxyByID).Methods("POST")
 	r.HandleFunc("/update-proxy", api.UpdateProxy).Methods("PUT")
 	r.HandleFunc("/delete-proxy", api.DeleteProxy).Methods("DELETE")
-	log.Println("Running server on :1406")
+	log.Println("Running server on :1506")
 	srv := &http.Server{
-		Addr: "0.0.0.0:1406",
+		Addr: "0.0.0.0:1506",
 		// Good practice to set timeouts to avoid Slowloris attacks.
 		WriteTimeout: time.Second * 15,
 		ReadTimeout:  time.Second * 15,

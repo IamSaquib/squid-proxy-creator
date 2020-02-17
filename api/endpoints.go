@@ -3,6 +3,8 @@
 package api
 
 import (
+	"bytes"
+	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -32,14 +34,16 @@ func CreateProxy(w http.ResponseWriter, r *http.Request) {
 	if err := AddToDB(config); err != nil {
 		log.Fatal(err)
 	}
-	path := "squid/" + strings.Replace(config.ProxyName, " ", "", -1) + ".conf"
+	path := "squid/" + strings.Replace(config.ID, " ", "", -1) + ".conf"
 	f, err := os.Create(path)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer f.Close()
-	content := []byte(config.Config)
-	if _, err = f.Write(content); err != nil {
+	content := &bytes.Buffer{}
+	gob.NewEncoder(content).Encode(config.Peer)
+	contentSlice := content.Bytes()
+	if _, err = f.Write(contentSlice); err != nil {
 		log.Fatal(err)
 	}
 	err = AddToConf(path)
@@ -82,18 +86,20 @@ func UpdateProxy(w http.ResponseWriter, r *http.Request) {
 	if err := UpdateDB(config); err != nil {
 		log.Fatal(err)
 	}
-	err := os.Remove("squid/" + strings.Replace(config.ProxyName, " ", "", -1) + ".conf")
+	err := os.Remove("squid/" + strings.Replace(config.ID, " ", "", -1) + ".conf")
 	if err != nil {
 		log.Fatal(err)
 	}
-	path := "squid/" + strings.Replace(config.ProxyName, " ", "", -1) + ".conf"
+	path := "squid/" + strings.Replace(config.ID, " ", "", -1) + ".conf"
 	f, err := os.Create(path)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer f.Close()
-	content := []byte(config.Config)
-	if _, err = f.Write(content); err != nil {
+	content := &bytes.Buffer{}
+	gob.NewEncoder(content).Encode(config.Peer)
+	contentSlice := content.Bytes()
+	if _, err = f.Write(contentSlice); err != nil {
 		log.Fatal(err)
 	}
 	w.Header().Set("Content-Type", "Application/json")
@@ -107,7 +113,7 @@ func DeleteProxy(w http.ResponseWriter, r *http.Request) {
 	if err := DeleteDB(config); err != nil {
 		log.Fatal(err)
 	}
-	err := os.Remove("squid/" + strings.Replace(config.ProxyName, " ", "", -1) + ".conf")
+	err := os.Remove("squid/" + strings.Replace(config.ID, " ", "", -1) + ".conf")
 	if err != nil {
 		log.Fatal(err)
 	}

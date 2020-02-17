@@ -10,13 +10,12 @@ import (
 
 // Config to structure conf
 type Config struct {
-	ID        string `json:"id"`
-	UserID    string `json:"user_id"`
-	Config    string `json:"config"`
-	ProxyName string `json:"proxy_name"`
-	ProxyPort string `json:"proxy_port"`
-	Ts        string `json:"ts"`
-	TsMod     string `json:"ts_mod"`
+	ID     string   `json:"id"`
+	Peer   []string `json:"peers"`
+	Server string   `json:"server"`
+	State  int32    `json:"state"`
+	Ts     string   `json:"ts"`
+	TsMod  string   `json:"ts_mod"`
 }
 
 // AddToDB to insert config into DB
@@ -31,15 +30,14 @@ func AddToDB(configuration Config) error {
 	if err != nil {
 		return err
 	}
-	stmt, err := tx.Prepare("INSERT INTO proxy_config(user_id, config, proxy_name, proxy_port) values (?, ?, ?, 3128)")
+	stmt, err := tx.Prepare("INSERT INTO proxy_config(peer, server) values (?, ?)")
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 	_, err = stmt.Exec(
-		configuration.UserID,
-		configuration.Config,
-		configuration.ProxyName,
+		configuration.Peer,
+		configuration.Server,
 	)
 	if err != nil {
 		return err
@@ -63,18 +61,17 @@ func ShowDB() ([]Config, error) {
 	defer rows.Close()
 	for rows.Next() {
 		var confn Config
-		err = rows.Scan(&confn.ID, &confn.UserID, &confn.Config, &confn.ProxyName, &confn.ProxyPort, &confn.Ts, &confn.TsMod)
+		err = rows.Scan(&confn.ID, &confn.Peer, &confn.Server, &confn.State, &confn.Ts, &confn.TsMod)
 		if err != nil {
 			return conf, err
 		}
 		conf = append(conf, Config{
-			ID:        confn.ID,
-			UserID:    confn.UserID,
-			Config:    confn.Config,
-			ProxyName: confn.ProxyName,
-			ProxyPort: confn.ProxyPort,
-			Ts:        confn.Ts,
-			TsMod:     confn.TsMod,
+			ID:     confn.ID,
+			Peer:   confn.Peer,
+			Server: confn.Server,
+			State:  confn.State,
+			Ts:     confn.Ts,
+			TsMod:  confn.TsMod,
 		})
 	}
 	return conf, nil
@@ -93,19 +90,19 @@ func ShowByID(id string) (Config, error) {
 		return conf, err
 	}
 	defer stmt.Close()
-	var userID string
-	var config string
-	var proxyName string
+	var server string
+	var peer []string
 	var ID string
-	err = stmt.QueryRow(id).Scan(&ID, &userID, &config, &proxyName)
+	var state int32
+	err = stmt.QueryRow(id).Scan(&ID, &peer, &server, &state)
 	if err != nil {
 		return conf, err
 	}
 	conf = Config{
-		ID:        id,
-		UserID:    userID,
-		Config:    config,
-		ProxyName: proxyName,
+		ID:     id,
+		Peer:   peer,
+		Server: server,
+		State:  state,
 	}
 
 	return conf, nil
@@ -122,13 +119,13 @@ func UpdateDB(configuration Config) error {
 	if err != nil {
 		return err
 	}
-	stmt, err := tx.Prepare("UPDATE proxy_config set config=?, ts_mod=? where id=?")
+	stmt, err := tx.Prepare("UPDATE proxy_config set peer=?, ts_mod=? where id=?")
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 	_, err = stmt.Exec(
-		configuration.Config,
+		configuration.Peer,
 		time.Now(),
 		configuration.ID,
 	)
