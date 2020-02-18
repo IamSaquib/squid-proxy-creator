@@ -113,10 +113,10 @@ func DeleteProxy(w http.ResponseWriter, r *http.Request) {
 	if err := DeleteDB(config); err != nil {
 		log.Fatal(err)
 	}
-	err := os.Remove("squid/" + strings.Replace(config.ID, " ", "", -1) + ".conf")
-	if err != nil {
-		log.Fatal(err)
-	}
+	// err := os.Remove("squid/" + strings.Replace(config.ID, " ", "", -1) + ".conf")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 	w.Header().Set("Content-Type", "Application/json")
 	json.NewEncoder(w).Encode("Deleted")
 }

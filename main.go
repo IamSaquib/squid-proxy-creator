@@ -62,11 +62,11 @@ func main() {
 		fmt.Fprintf(w, "Hello, %q", html.EscapeString(r.URL.Path))
 	})
 
-	r.HandleFunc("/create-proxy", api.CreateProxy).Methods("POST")
-	r.HandleFunc("/show-proxy", api.ShowProxy).Methods("GET")
+	r.HandleFunc("/proxy", api.CreateProxy).Methods("POST")
+	r.HandleFunc("/proxy", api.ShowProxy).Methods("GET")
 	r.HandleFunc("/show-proxy-id", api.ShowProxyByID).Methods("POST")
-	r.HandleFunc("/update-proxy", api.UpdateProxy).Methods("PUT")
-	r.HandleFunc("/delete-proxy", api.DeleteProxy).Methods("DELETE")
+	r.HandleFunc("/proxy", api.UpdateProxy).Methods("PUT")
+	r.HandleFunc("/proxy", api.DeleteProxy).Methods("DELETE")
 	log.Println("Running server on :1506")
 	srv := &http.Server{
 		Addr: "0.0.0.0:1506",

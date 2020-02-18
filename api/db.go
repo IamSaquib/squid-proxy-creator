@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"time"
 
-	// SQLite3 impot
+	// SQLite3 import
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -30,7 +30,7 @@ func AddToDB(configuration Config) error {
 	if err != nil {
 		return err
 	}
-	stmt, err := tx.Prepare("INSERT INTO proxy_config(peer, server) values (?, ?)")
+	stmt, err := tx.Prepare("INSERT INTO proxy_config(peers, server, state) values (json('?'), ?, ?)")
 	if err != nil {
 		return err
 	}
@@ -38,6 +38,7 @@ func AddToDB(configuration Config) error {
 	_, err = stmt.Exec(
 		configuration.Peer,
 		configuration.Server,
+		configuration.State,
 	)
 	if err != nil {
 		return err
@@ -54,7 +55,7 @@ func ShowDB() ([]Config, error) {
 		return conf, err
 	}
 	defer db.Close()
-	rows, err := db.Query("select * from proxy_config")
+	rows, err := db.Query("select id, json_extract(proxy_config.peers, '$.ip'), server, state, ts, ts_mod from proxy_config")
 	if err != nil {
 		return conf, err
 	}
@@ -119,7 +120,7 @@ func UpdateDB(configuration Config) error {
 	if err != nil {
 		return err
 	}
-	stmt, err := tx.Prepare("UPDATE proxy_config set peer=?, ts_mod=? where id=?")
+	stmt, err := tx.Prepare("UPDATE proxy_config set peers=?, ts_mod=? where id=?")
 	if err != nil {
 		return err
 	}
