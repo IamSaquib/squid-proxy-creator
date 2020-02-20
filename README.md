@@ -17,6 +17,5 @@ A Squid Proxy Dockerfile which runs a server in Go that will provide API endpoin
         "ts" DATETIME default current_timestamp,
         "ts_mod" DATETIME default current_timestamp
     );
-UPDATE proxy_config set peers=json_insert(peers, '$.ip[' || (json_array_length(proxy_config.peers,'$.ip')+1) || ']', '192.160.2.1') where id = '4f5b653c-3c38-42d2-98d3-3b0f3385d9b0';
 ```
 

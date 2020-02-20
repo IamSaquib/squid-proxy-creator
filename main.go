@@ -64,7 +64,7 @@ func main() {
 
 	r.HandleFunc("/proxy", api.CreateProxy).Methods("POST")
 	r.HandleFunc("/proxy", api.ShowProxy).Methods("GET")
-	r.HandleFunc("/show-proxy-id", api.ShowProxyByID).Methods("POST")
+	r.HandleFunc("/proxy/{id}", api.ShowProxyByID).Methods("GET")
 	r.HandleFunc("/proxy", api.UpdateProxy).Methods("PUT")
 	r.HandleFunc("/proxy", api.DeleteProxy).Methods("DELETE")
 	log.Println("Running server on :1506")
