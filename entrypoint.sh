@@ -25,3 +25,9 @@ sleep 5
 
 echo "Starting squid..."
 exec $(which squid) -f /etc/squid/squid.conf -NYCd 1
+
+inotifywait -q -m -e close_write --format %e squid.conf | 
+while read event; do
+    cp ./squid.conf /etc/squid/squid.conf
+    service squid reload
+done

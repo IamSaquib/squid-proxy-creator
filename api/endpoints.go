@@ -23,21 +23,23 @@ func AddToConf(path string) error {
 		return err
 	}
 	defer fs.Close()
-	if _, err := fs.WriteString("\ninclude /squid/acl-" + path + ".conf"); err != nil {
+	if _, err := fs.WriteString("\ninclude squid/acl-" + path + ".conf"); err != nil {
 		return err
 	}
 	return nil
 }
 
 // createACL function to generate ACL command for the given list IPs
-func createACL(id string) error {
+func createACL(id string, port string) error {
 	fs, err := os.Create("squid/acl-" + id + ".conf")
 	if err != nil {
 		return err
 	}
 	defer fs.Close()
 	var aclCmd bytes.Buffer
-	aclCmd.WriteString("acl " + id + " dstdomain \"squid/iplist-" + id + ".acl\"\nhttp_access allow " + id)
+	aclCmd.WriteString("http_port " + port)
+	aclCmd.WriteString("\ncache_peer " + id + " " + port + " 0")
+	aclCmd.WriteString("\nacl " + id + " dstdomain \"squid/iplist-" + id + ".acl\"\nhttp_access allow " + id)
 	if _, err = fs.Write(aclCmd.Bytes()); err != nil {
 		log.Fatal(err)
 	}
@@ -66,7 +68,7 @@ func CreateProxy(w http.ResponseWriter, r *http.Request) {
 	if _, err = f.Write(ipList.Bytes()); err != nil {
 		log.Fatal(err)
 	}
-	err = createACL(id.String())
+	err = createACL(id.String(), "3200")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -136,10 +138,15 @@ func DeleteProxy(w http.ResponseWriter, r *http.Request) {
 	if err := DeleteDB(config); err != nil {
 		log.Fatal(err)
 	}
-	// err := os.Remove("squid/" + strings.Replace(config.ID, " ", "", -1) + ".conf")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+	err := os.Remove("squid/acl-" + strings.Replace(config.ID, " ", "", -1) + ".acl")
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = os.Remove("squid/iplist-" + strings.Replace(config.ID, " ", "", -1) + ".conf")
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	w.Header().Set("Content-Type", "Application/json")
 	json.NewEncoder(w).Encode("Deleted")
 }
