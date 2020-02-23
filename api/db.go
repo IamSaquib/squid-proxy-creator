@@ -13,17 +13,13 @@ import (
 
 // Config to structure conf
 type Config struct {
-	ID     string `json:"id"`
-	Peer   Peer   `json:"peers"`
-	Server string `json:"server"`
-	State  int32  `json:"state"`
-	Ts     string `json:"ts"`
-	TsMod  string `json:"ts_mod"`
-}
-
-// Peer Struct to structure Ips
-type Peer struct {
-	Ips []string `json:"ips"`
+	ID    string   `json:"id"`
+	Peer  []string `json:"peers"`
+	Host  string   `json:"host"`
+	Port  string   `json:"port"`
+	State int32    `json:"state"`
+	Ts    string   `json:"ts"`
+	TsMod string   `json:"ts_mod"`
 }
 
 // AddToDB to insert config into DB
@@ -38,7 +34,7 @@ func AddToDB(configuration Config) (*uuid.UUID, error) {
 		return nil, err
 	}
 	id := uuid.New()
-	stmt, err := tx.Prepare("INSERT INTO proxy_config(id, peers, server, state) values (?, json(?), ?, ?)")
+	stmt, err := tx.Prepare("INSERT INTO proxy_config(id, peers, host, port, state) values (?, json(?), ?, ?, ?)")
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +43,8 @@ func AddToDB(configuration Config) (*uuid.UUID, error) {
 	_, err = stmt.Exec(
 		id,
 		string(mPeer),
-		configuration.Server,
+		configuration.Host,
+		configuration.Port,
 		configuration.State,
 	)
 	if err != nil {
@@ -65,7 +62,7 @@ func ShowDB() ([]Config, error) {
 		return conf, err
 	}
 	defer db.Close()
-	rows, err := db.Query("select id, json_extract(proxy_config.peers, '$'), server, state, ts, ts_mod from proxy_config")
+	rows, err := db.Query("select id, json_array(proxy_config.peers), host, port, state, ts, ts_mod from proxy_config")
 	if err != nil {
 		return conf, err
 	}
@@ -73,18 +70,19 @@ func ShowDB() ([]Config, error) {
 	for rows.Next() {
 		var confn Config
 		var marshalledPeer string
-		err = rows.Scan(&confn.ID, &marshalledPeer, &confn.Server, &confn.State, &confn.Ts, &confn.TsMod)
+		err = rows.Scan(&confn.ID, &marshalledPeer, &confn.Host, &confn.Port, &confn.State, &confn.Ts, &confn.TsMod)
 		if err != nil {
 			return conf, err
 		}
 		json.Unmarshal([]byte(marshalledPeer), &confn.Peer)
 		conf = append(conf, Config{
-			ID:     confn.ID,
-			Peer:   confn.Peer,
-			Server: confn.Server,
-			State:  confn.State,
-			Ts:     confn.Ts,
-			TsMod:  confn.TsMod,
+			ID:    confn.ID,
+			Peer:  confn.Peer,
+			Host:  confn.Host,
+			Port:  confn.Port,
+			State: confn.State,
+			Ts:    confn.Ts,
+			TsMod: confn.TsMod,
 		})
 	}
 	return conf, nil
@@ -98,25 +96,26 @@ func ShowByID(id string) (Config, error) {
 		return conf, err
 	}
 	defer db.Close()
-	stmt, err := db.Prepare("select id, json_extract(proxy_config.peers, '$'), server, state, ts, ts_mod from proxy_config where id = ?")
+	stmt, err := db.Prepare("select id, json_array(proxy_config.peers), host, port, state, ts, ts_mod from proxy_config where id = ?")
 	if err != nil {
 		return conf, err
 	}
 	defer stmt.Close()
 	var nConf Config
 	var marshalledPeer string
-	err = stmt.QueryRow(id).Scan(&nConf.ID, &marshalledPeer, &nConf.Server, &nConf.State, &nConf.Ts, &nConf.TsMod)
+	err = stmt.QueryRow(id).Scan(&nConf.ID, &marshalledPeer, &nConf.Host, &nConf.Port, &nConf.State, &nConf.Ts, &nConf.TsMod)
 	if err != nil {
 		return conf, err
 	}
 	json.Unmarshal([]byte(marshalledPeer), &nConf.Peer)
 	conf = Config{
-		ID:     id,
-		Peer:   nConf.Peer,
-		Server: nConf.Server,
-		State:  nConf.State,
-		Ts:     nConf.Ts,
-		TsMod:  nConf.TsMod,
+		ID:    id,
+		Peer:  nConf.Peer,
+		Host:  nConf.Host,
+		Port:  nConf.Port,
+		State: nConf.State,
+		Ts:    nConf.Ts,
+		TsMod: nConf.TsMod,
 	}
 
 	return conf, nil

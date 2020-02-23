@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/gorilla/mux"
@@ -23,7 +24,13 @@ func AddToConf(path string) error {
 		return err
 	}
 	defer fs.Close()
-	if _, err := fs.WriteString("\ninclude squid/acl-" + path + ".conf"); err != nil {
+
+	currentDir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(currentDir)
+	if _, err := fs.WriteString("\ninclude /home/iamsaquib/Dev/my_open_source/squid_proxy_balancer/squid/acl-" + path + ".conf"); err != nil {
 		return err
 	}
 	return nil
@@ -36,20 +43,31 @@ func createACL(id string, port string) error {
 		return err
 	}
 	defer fs.Close()
-	var aclCmd bytes.Buffer
-	aclCmd.WriteString("http_port " + port)
-	aclCmd.WriteString("\ncache_peer " + id + " " + port + " 0")
-	aclCmd.WriteString("\nacl " + id + " dstdomain \"squid/iplist-" + id + ".acl\"\nhttp_access allow " + id)
-	if _, err = fs.Write(aclCmd.Bytes()); err != nil {
+	currentDir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(currentDir)
+	var aclBody bytes.Buffer
+
+	aclBody.WriteString("http_port " + port + " name=port-" + id)
+	aclBody.WriteString("\nacl " + id + " dstdomain \"/home/iamsaquib/Dev/my_open_source/squid_proxy_balancer/squid/iplist-" + id + ".acl\"")
+	aclBody.WriteString("\nacl user-" + id + " myportname port-" + id)
+	aclBody.WriteString("\nhttp_access allow user-" + id + " " + id)
+	if _, err = fs.Write(aclBody.Bytes()); err != nil {
 		log.Fatal(err)
 	}
 	return nil
 }
 
+// selectNewPort function to return available port to add for a particular config
+// func
+
 // CreateProxy to create user defined proxy
 func CreateProxy(w http.ResponseWriter, r *http.Request) {
 	var config Config
 	_ = json.NewDecoder(r.Body).Decode(&config)
+	config.Port = "3201"
 	id, err := AddToDB(config)
 	if err != nil {
 		log.Fatal(err)
@@ -61,14 +79,18 @@ func CreateProxy(w http.ResponseWriter, r *http.Request) {
 	}
 	defer f.Close()
 	var ipList bytes.Buffer
-	for _, ip := range config.Peer.Ips {
+	for _, ip := range config.Peer {
 		ipList.WriteString(ip + "\n")
 	}
 	fmt.Println(ipList.String())
 	if _, err = f.Write(ipList.Bytes()); err != nil {
 		log.Fatal(err)
 	}
-	err = createACL(id.String(), "3200")
+	// port, err := selectNewPort()
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	err = createACL(id.String(), config.Port)
 	if err != nil {
 		log.Fatal(err)
 	}

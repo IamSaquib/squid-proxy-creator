@@ -9,13 +9,14 @@ A Squid Proxy Dockerfile which runs a server in Go that will provide API endpoin
 ### To Create Postgres DB
 
 ```sql
-    create table "proxy_config" (
-        "id" char(36) DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6)))) NOT NULL PRIMARY KEY, 
-        "peers" json,
-        "server" TEXT,
+    CREATE TABLE "proxy_config" (
+        "id" CHAR(36) DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6)))) NOT NULL PRIMARY KEY, 
+        "peers" JSON,
+        "host"  TEXT,
+        "port" CHAR(5),
         "state" INTEGER,
-        "ts" DATETIME default current_timestamp,
-        "ts_mod" DATETIME default current_timestamp
+        "ts" DATETIME DEFAULT current_timestamp,
+        "ts_mod" DATETIME DEFAULT current_timestamp
     );
 ```
 
