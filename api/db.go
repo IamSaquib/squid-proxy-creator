@@ -3,6 +3,8 @@ package api
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -11,7 +13,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// Config to structure conf
+// Config to strore conf
 type Config struct {
 	ID    string   `json:"id"`
 	Peer  []string `json:"peers"`
@@ -173,4 +175,44 @@ func DeleteDB(configuration Config) error {
 	}
 	tx.Commit()
 	return nil
+}
+
+// GetPort method to get the next available port
+func GetPort() (*string, error) {
+	db, err := sql.Open("sqlite3", "proxy.db")
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	if err != nil {
+		return nil, err
+	}
+	rows, err := tx.Query("SELECT port_number from proxy_port where availability=1 LIMIT 1")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var pNum int
+	for rows.Next() {
+		err = rows.Scan(&pNum)
+		if err != nil {
+			return nil, err
+		}
+		stmt, err := tx.Prepare("UPDATE proxy_port SET availability=0 where port_number=?")
+		if err != nil {
+			return nil, err
+		}
+		defer stmt.Close()
+		_, err = stmt.Exec(
+			pNum,
+		)
+		if err != nil {
+			return nil, err
+		}
+	}
+	tx.Commit()
+	fmt.Println("Port: %v", pNum)
+	portNum := strconv.Itoa(int(pNum))
+	return &portNum, nil
 }

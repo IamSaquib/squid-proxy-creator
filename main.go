@@ -62,11 +62,18 @@ func main() {
 		fmt.Fprintf(w, "Hello, %q", html.EscapeString(r.URL.Path))
 	})
 
+	// Proxy Endpoints
 	r.HandleFunc("/proxy", api.CreateProxy).Methods("POST")
 	r.HandleFunc("/proxy", api.ShowProxy).Methods("GET")
 	r.HandleFunc("/proxy/{id}", api.ShowProxyByID).Methods("GET")
 	r.HandleFunc("/proxy", api.UpdateProxy).Methods("PUT")
 	r.HandleFunc("/proxy", api.DeleteProxy).Methods("DELETE")
+
+	// Whitelist IP endpoint
+	r.HandleFunc("/whitelist", api.ShowWhitelist).Methods("GET")
+	r.HandleFunc("/whitelist", api.AddIPWhitelist).Methods("POST")
+	r.HandleFunc("/whitelist", api.RemoveWhitelist).Methods("DELETE")
+
 	log.Println("Running server on :1506")
 	srv := &http.Server{
 		Addr: "0.0.0.0:1506",

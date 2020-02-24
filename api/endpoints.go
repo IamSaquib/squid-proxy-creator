@@ -7,32 +7,45 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/gorilla/mux"
 )
 
+var mutex sync.Mutex
+
+// Whitelist to store whitelist IPs
+type Whitelist struct {
+	IP string `json:"ip"`
+}
+
 // AddToConf function to append into /etc/squid/squid.conf
-func AddToConf(path string) error {
+func AddToConf(path string, wg *sync.WaitGroup) error {
+	mutex.Lock()
 	fs, err := os.OpenFile("squid.conf",
 		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
 	defer fs.Close()
-
 	currentDir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Println(currentDir)
-	if _, err := fs.WriteString("\ninclude /home/iamsaquib/Dev/my_open_source/squid_proxy_balancer/squid/acl-" + path + ".conf"); err != nil {
+
+	if _, err := fs.WriteString("\ninclude " + currentDir + "/squid/acl-" + path + ".conf"); err != nil {
 		return err
 	}
+	mutex.Unlock()
+	wg.Done()
 	return nil
 }
 
@@ -67,12 +80,18 @@ func createACL(id string, port string) error {
 func CreateProxy(w http.ResponseWriter, r *http.Request) {
 	var config Config
 	_ = json.NewDecoder(r.Body).Decode(&config)
-	config.Port = "3201"
+	port, err := GetPort()
+	if err != nil {
+		log.Fatal(err)
+	}
+	config.Port = *port
 	id, err := AddToDB(config)
 	if err != nil {
 		log.Fatal(err)
 	}
 	path := "squid/iplist-" + id.String() + ".acl"
+
+	fmt.Println("Writing to file with mutex lock")
 	f, err := os.Create(path)
 	if err != nil {
 		log.Fatal(err)
@@ -86,20 +105,20 @@ func CreateProxy(w http.ResponseWriter, r *http.Request) {
 	if _, err = f.Write(ipList.Bytes()); err != nil {
 		log.Fatal(err)
 	}
-	// port, err := selectNewPort()
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+
 	err = createACL(id.String(), config.Port)
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = AddToConf(id.String())
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go AddToConf(id.String(), &wg)
+	wg.Wait()
 	if err != nil {
 		log.Fatal(err)
 	}
 	w.Header().Set("Content-Type", "Application/json")
-	json.NewEncoder(w).Encode("Created ")
+	json.NewEncoder(w).Encode("Created")
 }
 
 // ShowProxy to show all proxies available for user
@@ -160,15 +179,66 @@ func DeleteProxy(w http.ResponseWriter, r *http.Request) {
 	if err := DeleteDB(config); err != nil {
 		log.Fatal(err)
 	}
-	err := os.Remove("squid/acl-" + strings.Replace(config.ID, " ", "", -1) + ".acl")
+	currentDir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = os.Remove("squid/iplist-" + strings.Replace(config.ID, " ", "", -1) + ".conf")
+	fmt.Println(currentDir)
+	err = os.Remove("/home/iamsaquib/Dev/my_open_source/squid_proxy_balancer/squid/acl-" + strings.Replace(config.ID, " ", "", -1) + ".conf")
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = os.Remove("/home/iamsaquib/Dev/my_open_source/squid_proxy_balancer/squid/iplist-" + strings.Replace(config.ID, " ", "", -1) + ".acl")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	w.Header().Set("Content-Type", "Application/json")
 	json.NewEncoder(w).Encode("Deleted")
+}
+
+// AddIPWhitelist to add white list IPs
+func AddIPWhitelist(w http.ResponseWriter, r *http.Request) {
+	var wl Whitelist
+	_ = json.NewDecoder(r.Body).Decode(&wl)
+	fs, err := os.OpenFile("whitelist.txt", os.O_APPEND|os.O_WRONLY, 0600)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer fs.Close()
+	if _, err = fs.WriteString(wl.IP + "\n"); err != nil {
+		log.Fatal(err)
+	}
+}
+
+// ShowWhitelist to show the list of IPs added
+func ShowWhitelist(w http.ResponseWriter, r *http.Request) {
+	fs, err := os.OpenFile("whitelist.txt", os.O_RDONLY, 0400)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer fs.Close()
+	// scanner := bufio.NewScanner(fs)
+	ips, err := ioutil.ReadAll(fs)
+	if err != nil {
+		log.Fatal(err)
+	}
+	w.Header().Set("Content-Type", "Application/json")
+	json.NewEncoder(w).Encode(string(ips))
+}
+
+// RemoveWhitelist to remove a particular whitelist IP
+func RemoveWhitelist(w http.ResponseWriter, r *http.Request) {
+	var wl Whitelist
+	_ = json.NewDecoder(r.Body).Decode(&wl)
+	fs, err := ioutil.ReadFile("whitelist.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err != nil {
+		log.Fatal(err)
+	}
+	re := regexp.MustCompile("(?m)[\r\n]+^.*" + wl.IP + ".*$")
+	res := re.ReplaceAllString(string(fs), "")
+	err = ioutil.WriteFile("whitelist.txt", []byte(res), 0644)
 }

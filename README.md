@@ -20,3 +20,10 @@ A Squid Proxy Dockerfile which runs a server in Go that will provide API endpoin
     );
 ```
 
+```sql
+    CREATE TABLE "proxy_port" (
+        "port_number" INTEGER,
+        "availability" BOOLEAN default 1
+    );
+insert into proxy_port(port_number) with RECURSIVE n(i) as (SELECT 1026 union all SELECT i +1 from n where i < 65525) SELECT i from n;
+```
