@@ -1,12 +1,12 @@
-# Squid Proxy Creator
+# Squidman
 
-A Squid Proxy Dockerfile which runs a server in Go that will provide API endpoints to perform various tasks with Squid proxy server
+A Squid Proxy Server which runs a server in Go that will provide API endpoints to perform various tasks with Squid proxy server
 
 ### How to Run 
-- docker build -t squid-proxy-balancer .
-- docker run -d --restart=always -p 4128:3128 --volume /srv/docker/squid/cache:/var/spool/squid --name balancer -p 1406:1406 squid-proxy-balancer
+- go build main.go
+- ./main
 
-### To Create Postgres DB
+### To Create SqliteDB
 
 ```sql
     CREATE TABLE "proxy_config" (
