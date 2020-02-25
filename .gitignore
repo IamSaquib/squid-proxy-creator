@@ -1,3 +1,5 @@
 squid/
 squid.orig.conf
 tmp
+main
+.env

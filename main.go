@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 	"github.com/squid-proxy-creator/api"
 )
 
@@ -54,9 +55,15 @@ func main() {
 	flag.Parse()
 
 	r := mux.NewRouter()
-	// Add your routes as needed
+
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+	username := os.Getenv("username")
+	password := os.Getenv("password")
 	r.Use(basicAuth("Basic", map[string]string{
-		"saquib": "6212",
+		username: password,
 	}))
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Hello, %q", html.EscapeString(r.URL.Path))
@@ -68,6 +75,8 @@ func main() {
 	r.HandleFunc("/proxy/{id}", api.ShowProxyByID).Methods("GET")
 	r.HandleFunc("/proxy", api.UpdateProxy).Methods("PUT")
 	r.HandleFunc("/proxy", api.DeleteProxy).Methods("DELETE")
+	r.HandleFunc("/proxy/clear-trash", api.DeleteProxyFromTrash).Methods("DELETE")
+	r.HandleFunc("/proxy/restore-trash", api.RestoreProxy).Methods("PUT")
 
 	// Whitelist IP endpoint
 	r.HandleFunc("/whitelist", api.ShowWhitelist).Methods("GET")

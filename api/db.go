@@ -3,7 +3,6 @@ package api
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -24,8 +23,8 @@ type Config struct {
 	TsMod string   `json:"ts_mod"`
 }
 
-// AddToDB to insert config into DB
-func AddToDB(configuration Config) (*uuid.UUID, error) {
+// addToDB to insert config into DB
+func addToDB(configuration Config) (*uuid.UUID, error) {
 	db, err := sql.Open("sqlite3", "proxy.db")
 	if err != nil {
 		return nil, err
@@ -56,8 +55,8 @@ func AddToDB(configuration Config) (*uuid.UUID, error) {
 	return &id, nil
 }
 
-// ShowDB to list all config
-func ShowDB() ([]Config, error) {
+// showDB to list all config
+func showDB() ([]Config, error) {
 	var conf []Config
 	db, err := sql.Open("sqlite3", "proxy.db")
 	if err != nil {
@@ -90,8 +89,8 @@ func ShowDB() ([]Config, error) {
 	return conf, nil
 }
 
-// ShowByID to show details about a particular proxy
-func ShowByID(id string) (Config, error) {
+// showByID to show details about a particular proxy
+func showByID(id string) (Config, error) {
 	var conf Config
 	db, err := sql.Open("sqlite3", "proxy.db")
 	if err != nil {
@@ -123,8 +122,8 @@ func ShowByID(id string) (Config, error) {
 	return conf, nil
 }
 
-// UpdateDB to update a particular config by the ID
-func UpdateDB(configuration Config) error {
+// updateDB to update a particular config by the ID
+func updateDB(configuration Config) error {
 	db, err := sql.Open("sqlite3", "proxy.db")
 	if err != nil {
 		return err
@@ -151,8 +150,8 @@ func UpdateDB(configuration Config) error {
 	return nil
 }
 
-// DeleteDB to delete a particular row by ID
-func DeleteDB(configuration Config) error {
+// softDeleteDB to delete a particular row by ID
+func softDeleteDB(configuration Config) error {
 	db, err := sql.Open("sqlite3", "proxy.db")
 	if err != nil {
 		return err
@@ -162,7 +161,7 @@ func DeleteDB(configuration Config) error {
 	if err != nil {
 		return err
 	}
-	stmt, err := tx.Prepare("DELETE FROM proxy_config where id=?")
+	stmt, err := tx.Prepare("UPDATE proxy_config SET state=10 WHERE id=?")
 	if err != nil {
 		return err
 	}
@@ -177,8 +176,60 @@ func DeleteDB(configuration Config) error {
 	return nil
 }
 
-// GetPort method to get the next available port
-func GetPort() (*string, error) {
+// restoreTrashDB to restore soft deleted proxies
+func restoreTrashDB(configuration Config) error {
+	db, err := sql.Open("sqlite3", "proxy.db")
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	stmt, err := tx.Prepare("UPDATE proxy_config SET state=40 WHERE id=?")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(
+		configuration.ID,
+	)
+	if err != nil {
+		return err
+	}
+	tx.Commit()
+	return nil
+}
+
+// hardDeleteDB to delete even from trash
+func hardDeleteDB(configuration Config) error {
+	db, err := sql.Open("sqlite3", "proxy.db")
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	stmt, err := tx.Prepare("DELETE form proxy_config WHERE id=?")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(
+		configuration.ID,
+	)
+	if err != nil {
+		return err
+	}
+	tx.Commit()
+	return nil
+}
+
+// getPort method to get the next available port
+func getPort() (*string, error) {
 	db, err := sql.Open("sqlite3", "proxy.db")
 	if err != nil {
 		return nil, err
@@ -212,7 +263,6 @@ func GetPort() (*string, error) {
 		}
 	}
 	tx.Commit()
-	fmt.Println("Port: %v", pNum)
 	portNum := strconv.Itoa(int(pNum))
 	return &portNum, nil
 }
