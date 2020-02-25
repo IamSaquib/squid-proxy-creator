@@ -1,4 +1,4 @@
-# Squidman
+# Proxyman
 
 A Squid Proxy Server which runs a server in Go that will provide API endpoints to perform various tasks with Squid proxy server
 
