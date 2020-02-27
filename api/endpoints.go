@@ -62,7 +62,7 @@ func removeFromConf(path string, wg *sync.WaitGroup) error {
 			lines[i] = ""
 		}
 	}
-	output := strings.Join(lines, "")
+	output := strings.Join(lines, "\n")
 	err = ioutil.WriteFile("squid.conf", []byte(output), 0644)
 	if err != nil {
 		log.Fatalln(err)
@@ -96,9 +96,6 @@ func createACL(id string, port string) error {
 	return nil
 }
 
-// selectNewPort function to return available port to add for a particular config
-// func
-
 // CreateProxy to create user defined proxy
 func CreateProxy(w http.ResponseWriter, r *http.Request) {
 	var config Config
@@ -109,6 +106,7 @@ func CreateProxy(w http.ResponseWriter, r *http.Request) {
 	}
 	config.Port = *port
 	id, err := addToDB(config)
+	config.ID = id.String()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -141,7 +139,7 @@ func CreateProxy(w http.ResponseWriter, r *http.Request) {
 		log.Fatal(err)
 	}
 	w.Header().Set("Content-Type", "Application/json")
-	json.NewEncoder(w).Encode("Created")
+	json.NewEncoder(w).Encode(config)
 }
 
 // ShowProxy to show all proxies available for user
@@ -199,7 +197,7 @@ func UpdateProxy(w http.ResponseWriter, r *http.Request) {
 func DeleteProxy(w http.ResponseWriter, r *http.Request) {
 	var config Config
 	_ = json.NewDecoder(r.Body).Decode(&config)
-	if err := restoreTrashDB(config); err != nil {
+	if err := softDeleteDB(config); err != nil {
 		log.Fatal(err)
 	}
 
@@ -215,7 +213,7 @@ func DeleteProxy(w http.ResponseWriter, r *http.Request) {
 func RestoreProxy(w http.ResponseWriter, r *http.Request) {
 	var config Config
 	_ = json.NewDecoder(r.Body).Decode(&config)
-	if err := softDeleteDB(config); err != nil {
+	if err := restoreTrashDB(config); err != nil {
 		log.Fatal(err)
 	}
 
@@ -247,10 +245,6 @@ func DeleteProxyFromTrash(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go removeFromConf(config.ID, &wg)
-	wg.Wait()
 	w.Header().Set("Content-Type", "Application/json")
 	json.NewEncoder(w).Encode("Deleted")
 }

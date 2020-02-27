@@ -213,7 +213,7 @@ func hardDeleteDB(configuration Config) error {
 	if err != nil {
 		return err
 	}
-	stmt, err := tx.Prepare("DELETE form proxy_config WHERE id=?")
+	stmt, err := tx.Prepare("DELETE from proxy_config WHERE id=?")
 	if err != nil {
 		return err
 	}
