@@ -197,6 +197,7 @@ func UpdateProxy(w http.ResponseWriter, r *http.Request) {
 func DeleteProxy(w http.ResponseWriter, r *http.Request) {
 	var config Config
 	_ = json.NewDecoder(r.Body).Decode(&config)
+	log.Println(config)
 	if err := softDeleteDB(config); err != nil {
 		log.Fatal(err)
 	}

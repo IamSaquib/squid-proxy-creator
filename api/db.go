@@ -161,7 +161,7 @@ func softDeleteDB(configuration Config) error {
 	if err != nil {
 		return err
 	}
-	stmt, err := tx.Prepare("UPDATE proxy_config SET state=10 WHERE id=?")
+	stmt, err := tx.Prepare("UPDATE proxy_config SET state=100 WHERE id=?")
 	if err != nil {
 		return err
 	}
